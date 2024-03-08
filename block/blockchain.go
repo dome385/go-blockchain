@@ -1,6 +1,8 @@
 package block
 
 import (
+	"blockchain/utils"
+	"crypto/ecdsa"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -112,9 +114,31 @@ func (bc *Blockchain) PrintBlockChain() {
 }
 
 // AddTransaction fügt der Transaktionsliste eine neue Transaktion hinzu
-func (bc *Blockchain) AddTransaction(sender string, recipient string, value float32) {
+func (bc *Blockchain) AddTransaction(sender string, recipient string, value float32, senderPulicKey *ecdsa.PublicKey, s *utils.Signature) bool {
 	t := NewTransaction(sender, recipient, value)
-	bc.transactionPool = append(bc.transactionPool, t)
+
+	if sender == MINING_SENDER {
+		bc.transactionPool = append(bc.transactionPool, t)
+		return true
+	}
+
+	if bc.VerifyTransactionSignature(senderPulicKey, s, t) {
+		if bc.CalculateTotalAmount(sender) < value {
+			log.Println("ERROR: Not enough balance in a wallet")
+			return false
+		}
+		bc.transactionPool = append(bc.transactionPool, t)
+		return true
+	} else {
+		log.Println("ERROR: Verify Transaction")
+	}
+	return false
+}
+
+func (bc *Blockchain) VerifyTransactionSignature(senderPublicKey *ecdsa.PublicKey, s *utils.Signature, t *Transaction) bool {
+	m, _ := json.Marshal(t)
+	h := sha256.Sum256([]byte(m))
+	return ecdsa.Verify(senderPublicKey, h[:], s.R, s.S)
 }
 
 // CopyTransactionPool kopiert den Transaktionspool
@@ -147,7 +171,7 @@ func (bc *Blockchain) ProofOfWork() int {
 }
 
 func (bc *Blockchain) Mining() bool {
-	bc.AddTransaction(MINING_SENDER, bc.blockchainAddress, MINING_REWARD)
+	bc.AddTransaction(MINING_SENDER, bc.blockchainAddress, MINING_REWARD, nil, nil)
 	nonce := bc.ProofOfWork()
 	previousHash := bc.LastBlock().Hash()
 	bc.CreateBlock(nonce, previousHash)
@@ -193,28 +217,4 @@ func (t *Transaction) MarshalJSON() ([]byte, error) {
 		RecipientBlockchainAddress: t.recipientBlockchainAddress,
 		Value:                      t.value,
 	})
-}
-
-func main() {
-	myBlockChainAddress := "my_blockchain_address"
-
-	// Neue Blockchain erstellen
-	blockChain := NewBlockChain(myBlockChainAddress)
-	blockChain.PrintBlockChain()
-
-	blockChain.AddTransaction("A", "B", 1.0)
-	blockChain.Mining()
-	blockChain.PrintBlockChain()
-
-	// Letzter Hash dem neuen Block hinzufügen
-	blockChain.AddTransaction("C", "D", 2.0)
-	blockChain.AddTransaction("X", "Y", 3.0)
-	blockChain.Mining()
-	blockChain.PrintBlockChain()
-
-	fmt.Printf("my  %.1f\n", blockChain.CalculateTotalAmount("my_blockchain_address"))
-	fmt.Printf("C  %.1f\n", blockChain.CalculateTotalAmount("C"))
-	fmt.Printf("D  %.1f\n", blockChain.CalculateTotalAmount("D"))
-	fmt.Printf("Y  %.1f\n", blockChain.CalculateTotalAmount("Y"))
-
 }
