@@ -194,27 +194,3 @@ func (t *Transaction) MarshalJSON() ([]byte, error) {
 		Value:                      t.value,
 	})
 }
-
-func main() {
-	myBlockChainAddress := "my_blockchain_address"
-
-	// Neue Blockchain erstellen
-	blockChain := NewBlockChain(myBlockChainAddress)
-	blockChain.PrintBlockChain()
-
-	blockChain.AddTransaction("A", "B", 1.0)
-	blockChain.Mining()
-	blockChain.PrintBlockChain()
-
-	// Letzter Hash dem neuen Block hinzufügen
-	blockChain.AddTransaction("C", "D", 2.0)
-	blockChain.AddTransaction("X", "Y", 3.0)
-	blockChain.Mining()
-	blockChain.PrintBlockChain()
-
-	fmt.Printf("my  %.1f\n", blockChain.CalculateTotalAmount("my_blockchain_address"))
-	fmt.Printf("C  %.1f\n", blockChain.CalculateTotalAmount("C"))
-	fmt.Printf("D  %.1f\n", blockChain.CalculateTotalAmount("D"))
-	fmt.Printf("Y  %.1f\n", blockChain.CalculateTotalAmount("Y"))
-
-}
