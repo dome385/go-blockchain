@@ -185,7 +185,7 @@ func (bc *Blockchain) Mining() bool {
 	nonce := bc.ProofOfWork()
 	previousHash := bc.LastBlock().Hash()
 	bc.CreateBlock(nonce, previousHash)
-	log.Println("action=mining, status=success")
+	log.Println("mining=success")
 	return true
 }
 
